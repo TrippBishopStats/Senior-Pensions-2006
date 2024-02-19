@@ -3,10 +3,6 @@ project:
 
 website:
   title: "Case Study: Providing Pensions for the Poor"
-  navbar:
-    left:
-      - href: index.qmd
-        text: Home
 
 format:
   html:
