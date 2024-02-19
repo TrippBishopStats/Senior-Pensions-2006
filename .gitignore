@@ -3,4 +3,8 @@
 .RData
 .Ruserdata
 
+_publish.yml
+styles.css
+
+_site/
 /.quarto/
