@@ -42,14 +42,21 @@ The criteria for comparing and contrasting these eligibility criteria policy opt
 **Leakage** refers to persons who receive the pension but are not members of the target population.
 
 $$
-\frac{\text{\# enrolled who are not poor}}{\text{Total \# enrolled in programme}}
+\frac{\text{\# enrolled who are not poor}}{\text{Total \# enrolled in program}}
 $$
 
 **Undercoverage** refers to persons who should receive the pension but are not reached by the program.
 
 $$
-\frac{\text{\# of poor individuals not enrolled}}{\text{Total \# enrolled in programme}}
-$$ For the purposes of this analysis, economy will be measured in terms of cost per target individual served. Options with higher leakage will be penalised by the higher cost per target individual.
+\frac{\text{\# of poor individuals not enrolled}}{\text{Total \# enrolled in program}}
+$$ 
+
+For the purposes of this analysis, economy will be measured in terms of cost per target individual served. Options with higher leakage will be penalized by the higher cost per target individual. Equity will be assessed by comparing leakage and undercoverage rates. The goal is to reach as many qualified individuals as possible while minimizing the number of individuals who receive the pension unnecessarily.
+
+::: callout-caution
+## Financial Feasibility
+There is a budget constraint of 8.5 billion pesos. The most people the program can serve is 8.5 billion pesos/6000 pesos for the annual pension per person or 1,416,667 people.
+:::
 
 Data on the efficiency of each option was collected and tabulated. Note that the marginality option was broken into two groups because the budget constraint of \$8.5B prevents all individuals from being served. When this was done, the undercoverage of the marginality option increased from 44% to 74%.
 
@@ -57,8 +64,10 @@ Data on the efficiency of each option was collected and tabulated. Note that the
 #| message: false
 #| echo: false
 
+library(numform)
 library(tidyverse)
 library(gt)
+
 rm(list=ls())
 
 # create a custom theme object with a few properties that will be used in all visualisations.
@@ -71,7 +80,7 @@ page_theme <- theme_minimal() +
 theme_set(page_theme)
 
 data <- data.frame(
-  option = c("Oportunidades","Rural","Marginality A","Marginality B"),
+  option = c("Oportunidades","Rural Locales","Marginality A","Marginality B"),
   Leakage = c(0.2576,0.4328,0.6553,0.6553),
   Undercoverage = c(0.6593, 0.5719,0.4403,0.7391),
   people_served = c(859299,1413182,3040844,1416667)
@@ -91,29 +100,39 @@ data |>
     )
   ) |> 
   gt() |> 
+  tab_header(
+    title = "Program performance"
+  ) |> 
   fmt_number(columns = `People Served`, sep_mark = ",", decimals = 0) |> 
   fmt_percent(columns = c(Leakage, Undercoverage))
 ```
 
 ::: callout-important
-Because both the leakage and undercoverage of the marginality option are both so high, this option has been removed from consideration. Only the Oportunidades and Rural options will be considered in the analysis and recommendations.
-:::
-
-::: callout-caution
-## Financial Feasibility
-
-There is a budget constraint of 8.5 billion pesos. The most people the program can serve is 8.5 billion pesos/6000 pesos for the annual pension per person or 1,416,667 people.
+Because both the leakage and undercoverage of the marginality option are both so high, this option has been removed from consideration. Only the Oportunidades and Rural Locales options will be considered in the analysis and recommendations.
 :::
 
 ## Analysis
+The goal of the analysis is to identify the option that best satisfies the program constraints and balances the assessment criteria of efficiency, economy, and equity. 
 
-### Criteria for analysis
+Criteria for analysis:
 
 1)  Efficiency - Will people in need receive the pension, and people not in need not receive the pension
 2)  Financial feasibility - the budget for this is \$8.5B
-3)  Administrative feasibility - Will this be logistically and administratively feasible?
-4)  Politics - Is the option politically feasible? Will different political factions disagree?
-5)  Ethical Implications - Is the option fair to all affected? Will it create or widen inequities?
+3)  Ethical Implications - Is the option fair to all affected? Will it create or widen inequities?
+
+### Comparing the Oportunidates and Rural Locales program options
+Using the program performance data additional quantities can be computed that will allow for a comparison of the two options under consideration.
+
+We can compare the leakage count using the following equation
+$$
+\text{leakage count} = \text{total served}*\text{leakage rate}.
+$$
+This value can then be subtracted from the total number of people served to determine how many eligible individuals are served by the program.
+
+$$
+\text{eligible served count} = \text{total served} - \text{leakage count}
+$$
+
 
 ```{r compute supporting quantities}
 #| code-summary: Show the code
@@ -139,22 +158,37 @@ economy_A <- total_cost_A/target_pop_served_A
 economy_B <- total_cost_B/target_pop_served_B
 
 df_populations <- data.frame(
-  option = c("Oportunidades","Rural"),
+  option = c("Oportunidades","Rural Locales"),
   leaked_pop = c(leakage_option_A, leakage_option_B),
   served_pop = c(target_pop_served_A, target_pop_served_B),
   total_cost = c(total_cost_A, total_cost_B),
   cost_efficiency = c(economy_A, economy_B)
 )
-
-# a measure of how effect option A is based on proportion served vs proportion of cost
-# target_pop_served_A/target_pop_served_B
-# total_cost_A/total_cost_B
 ```
 
-```{r visualisation of comparison Opportunidades and Samll Towns}
+For Oportunidades, the number of eligible persons served by the program is `r scales::comma(target_pop_served_A)` while `r scales::comma(target_pop_served_B)` are served by the Rural Locales program option. 
+
+The total cost of each program is simply the product of the total number of people in the program and the yearly pension about, which is $6,000.
+
+For the Oportunidades program option, this amounts to `r paste("$", f_bills(total_cost_A,+2), sep="")` while for the Rural Locales program option the total cost is `r paste("$", f_bills(total_cost_B,+2), sep="")`. Dividing the total cost of each program by the number of eligible persons served gives us an indication of the economy of the program.
+
+$$
+\text{cost per eligible senior} = \frac{\text{total program cost}}{\text{eligible served count}}
+$$
+The cost per eligible senior for the Oportunidades program option is `r scales::dollar(round(economy_A,0))` and for Rural Locales program option the cost per eligible senior is `r scales::dollar(round(economy_B,0))`.
+
+The cost per eligible senior for the Oportunidades is `r scales::percent((economy_B - economy_A)/economy_B)` less than that for Rural Locales. Oportunidades also serves 80% of the eligible seniors served by Rural Locales while costing 40% less.
+
+Both options are financially feasible, but Oportunidades is more efficient than Rural Locales. Comparing the equity of the two programs is more challenging. Overall, Rural Locales server more people and more eligible people. It reaches `r scales::comma(target_pop_served_B - target_pop_served_A)` more eligible people than Oportunidades does. On the other hand, it does this much less efficiently and at greater cost.
+
+## Recommendations
+The recommendation from the Deputy Director of General Planning is to proceed with Option A, which utilizes the existing Oportunidades program. There are a number of reasons for this. First, while the Rural Locales program option does reach more people, most of those additional people reached do not need the assistance.
+
+```{r visualisation of comparison Oportunidades and Rural Locales}
 #| code-summary: Show the code
+
 df_total <- data |> 
-  filter(option %in% c("Oportunidades", "Rural")) |> 
+  filter(option %in% c("Oportunidades", "Rural Locales")) |> 
   inner_join(df_populations, by="option") |> 
   pivot_longer(cols = -option, names_to = "metric", values_to = "measure") |> 
   mutate(
@@ -168,7 +202,7 @@ df_total <- data |>
     )
   )
 
-gg_people_served <- df_total |>
+df_total |>
   filter(metric %in% c("Ineligible", "Eligible")) |> 
   ggplot(aes(
     x=option,
@@ -186,9 +220,9 @@ gg_people_served <- df_total |>
     caption = "Figure 1"
   ) +
   scale_y_continuous(breaks=c(0,500000,1000000), labels = c("0", "500K", "1M"))
-  
-gg_people_served
 ```
+
+The Oportunidades program option is more efficient in that it reaches 80% of the eligible persons assisted by the Rural Locales program option but for 60% of the cost. 
 
 ```{r disply total cost graph}
 #| code-summary: Show the code
@@ -206,11 +240,13 @@ df_total |>
   labs(
     x = element_blank(),
     y = "Cost in Pesos ($)",
-    title = "Oportunidades costs 60% of the Rural criterion",
+    title = "Oportunidades costs 40% less than the Rural Locales option",
     caption = "Figure 2"
   ) +
   scale_y_continuous(breaks=c(seq(0,8,2)*10^9), labels = c("0", "$2B", "$4B", "$6B", "$8B"))
 ```
+
+This increased efficiency can be seen in figure 3 which shows that due to the lower number of ineligible people being served, the cost per eligible person is `r scales::dollar(round(economy_A,0))` vs `r scales::dollar(round(economy_B,0))`. 
 
 ```{r display efficiency graph}
 #| code-summary: Show the code
@@ -248,6 +284,4 @@ df_total |>
   scale_y_continuous(breaks=c(seq(0,10,2.5)*1000), labels = c("0", "$2.5K", "$5K", "$7.5K", "$10K"))
 ```
 
-## Recommendations
-
-The recommendation from the Deputy Director of General Planning is to proceed with Option A, which utilizes the existing Oportunidades program. There are a number of reasons for this. First, while Option B (Small Towns) does reach more people, most of those additional people reached do not need the assistance. Option A is more efficient in that it reaches 80% of the eligible persons assisted by Option B but for 60% of the cost (see figures 1 & 2). This increased efficiency can be seen in figure 3 which shows that due to the lower number of ineligible people being served, the cost per eligible person is `r scales::dollar(round(total_cost_A/target_pop_served_A,0))` vs `r scales::dollar(round(total_cost_B/target_pop_served_B,0))`. Because of the significant different in the efficiency of the two options, the recommendation is it proceed with Option A. The savings can be used to improve the program, particularly the number of eligible persons not covered at present. Remaining funds can then be carried over into the next year and applied to eligible persons who were not covered in the first year or the program.
+Because of the significant difference in the efficiency of the two options, the recommendation is it proceed with the Oportunidades program option. The savings can be used to improve the program, particularly the number of eligible persons not covered initially. Remaining funds can then be carried over into the next year and applied to eligible persons who were not covered in the first year or the program.
